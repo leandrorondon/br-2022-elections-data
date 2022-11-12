@@ -2,7 +2,6 @@ version: '3.8'
 services:
   db:
     image: postgres:14.5-alpine
-    restart: always
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -10,6 +9,17 @@ services:
       - '5432:5432'
     volumes:
       - db-eleicoes:/var/lib/postgresql/data
+    networks:
+      default:
+        aliases:
+          - db.local
+
+  golang:
+    image: golang:1.19-alpine
+    volumes:
+      - .:/go/elections
+    working_dir: /go/elections
+
 volumes:
   db-eleicoes:
     driver: local
