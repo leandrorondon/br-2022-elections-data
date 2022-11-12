@@ -23,8 +23,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	api := ibgelocalidades.New()
-
 	psqlInfo := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOSTNAME"),
@@ -39,6 +37,7 @@ func main() {
 	}
 	defer db.Close()
 
+	api := ibgelocalidades.New()
 	getAndSaveRegioes(api, db)
 	getAndSaveUFs(api, db)
 	getAndSaveMunicipios(api, db)
@@ -53,7 +52,7 @@ func getAndSaveRegioes(api *api.API, db *sql.DB) {
 	log.Println("Regioes to insert:", len(regioes))
 
 	for _, r := range regioes {
-		query := `INSERT INTO regioes (id, nome, sigla) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
+		query := `INSERT INTO regiao (id, nome, sigla) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
 		_, err := db.Exec(query, r.ID, r.Nome, r.Sigla)
 		if err != nil {
 			fmt.Printf("Failed!\n")
@@ -73,7 +72,7 @@ func getAndSaveUFs(api *api.API, db *sql.DB) {
 	log.Println("UFs to insert:", len(ufs))
 
 	for _, r := range ufs {
-		query := `INSERT INTO ufs (id, nome, sigla, regiao_id) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
+		query := `INSERT INTO uf (id, nome, sigla, regiao_id) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
 		_, err := db.Exec(query, r.ID, r.Nome, r.Sigla, r.Regiao.ID)
 		if err != nil {
 			fmt.Printf("Failed!\n")
@@ -93,7 +92,7 @@ func getAndSaveMunicipios(api *api.API, db *sql.DB) {
 	log.Println("Municipios to insert:", len(municipios))
 
 	for _, r := range municipios {
-		query := `INSERT INTO municipios (id, nome, uf_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
+		query := `INSERT INTO municipio (id, nome, uf_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
 		_, err := db.Exec(query, r.ID, r.Nome, r.Microrregiao.Mesorregiao.UF.ID)
 		if err != nil {
 			fmt.Printf("Failed!\n")

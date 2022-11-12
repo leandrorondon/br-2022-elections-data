@@ -1,15 +1,15 @@
 BEGIN;
 
-CREATE TABLE regioes (
+CREATE TABLE regiao (
     id INT NOT NULL,
     nome VARCHAR(128) NOT NULL,
     sigla VARCHAR(2) NOT NULL,
     PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX regioes_sigla_idx ON regioes(sigla);
+CREATE UNIQUE INDEX regiao_sigla_idx ON regiao(sigla);
 
-CREATE TABLE ufs (
+CREATE TABLE uf (
     id INT NOT NULL,
     nome VARCHAR(128) NOT NULL,
     sigla VARCHAR(2) NOT NULL,
@@ -17,21 +17,21 @@ CREATE TABLE ufs (
     PRIMARY KEY (id),
     CONSTRAINT fk_regiao
         FOREIGN KEY(regiao_id)
-        REFERENCES regioes(id)
+        REFERENCES regiao(id)
 );
 
-CREATE UNIQUE INDEX uf_sigla_idx ON ufs(sigla);
+CREATE UNIQUE INDEX uf_sigla_idx ON uf(sigla);
 
-CREATE TABLE municipios (
+CREATE TABLE municipio (
     id INT NOT NULL,
     nome VARCHAR(128) NOT NULL,
     uf_id INT NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_estado
         FOREIGN KEY(uf_id)
-        REFERENCES ufs(id)
+        REFERENCES uf(id)
 );
 
-CREATE INDEX municipio_nome_idx ON municipios(nome);
+CREATE INDEX municipio_nome_idx ON municipio(nome);
 
 COMMIT;
