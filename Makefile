@@ -1,4 +1,3 @@
-
 DOCKER_COMPOSE_EXEC_DB=docker-compose exec db psql -U postgres -c
 DOCKER_COMPOSE_RUN_GO=docker-compose run --rm golang
 
@@ -30,4 +29,7 @@ migrate-local-db:
 populate-locations:
 	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/locations/locations.go
 
-from-scratch: start-local-db-server delete-local-db-no-conf create-local-db migrate-local-db populate-locations
+populate-populations:
+	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/populations/populations.go
+
+from-scratch: start-local-db-server delete-local-db-no-conf create-local-db migrate-local-db populate-locations populate-populations
