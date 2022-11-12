@@ -18,3 +18,6 @@ open-local-db-terminal:
 
 migrate-local-db:
 	@docker-compose run --rm golang go run cmd/migrate/migrate.go
+
+populate-locations:
+	@docker-compose run --rm golang go run cmd/locations/locations.go

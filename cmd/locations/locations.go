@@ -5,26 +5,34 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
+	"github.com/joho/godotenv"
 	ibgelocalidades "github.com/leandrorondon/go-ibge-localidades"
 	"github.com/leandrorondon/go-ibge-localidades/api"
 	_ "github.com/lib/pq"
 )
 
 const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "postgres"
-	dbname   = "eleicoes"
+	dbName = "bronze"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	api := ibgelocalidades.New()
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+	psqlInfo := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		os.Getenv("DB_HOSTNAME"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		dbName,
+	)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -42,7 +50,7 @@ func getAndSaveRegioes(api *api.API, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Regioes to insert: %d ... ", len(regioes))
+	log.Println("Regioes to insert:", len(regioes))
 
 	for _, r := range regioes {
 		query := `INSERT INTO regioes (id, nome, sigla) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
@@ -53,7 +61,7 @@ func getAndSaveRegioes(api *api.API, db *sql.DB) {
 		}
 	}
 
-	fmt.Printf("OK!\n")
+	log.Println("Regioes saved.")
 }
 
 func getAndSaveUFs(api *api.API, db *sql.DB) {
@@ -62,7 +70,7 @@ func getAndSaveUFs(api *api.API, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("UFs to insert: %d ... ", len(ufs))
+	log.Println("UFs to insert:", len(ufs))
 
 	for _, r := range ufs {
 		query := `INSERT INTO ufs (id, nome, sigla, regiao_id) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
@@ -73,7 +81,7 @@ func getAndSaveUFs(api *api.API, db *sql.DB) {
 		}
 	}
 
-	fmt.Printf("OK!\n")
+	log.Println("UFs saved.")
 }
 
 func getAndSaveMunicipios(api *api.API, db *sql.DB) {
@@ -82,7 +90,7 @@ func getAndSaveMunicipios(api *api.API, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Municipios to insert: %d ... ", len(municipios))
+	log.Println("Municipios to insert:", len(municipios))
 
 	for _, r := range municipios {
 		query := `INSERT INTO municipios (id, nome, uf_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
@@ -93,5 +101,5 @@ func getAndSaveMunicipios(api *api.API, db *sql.DB) {
 		}
 	}
 
-	fmt.Printf("OK!\n")
+	log.Println("Municipios saved.")
 }
