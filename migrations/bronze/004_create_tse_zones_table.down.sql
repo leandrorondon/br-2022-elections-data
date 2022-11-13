@@ -1,0 +1,8 @@
+BEGIN;
+
+DROP TABLE IF EXISTS section_tse;
+DROP TABLE IF EXISTS zona_tse;
+DROP TABLE IF EXISTS municipio_tse;
+DROP TABLE IF EXISTS uf_tse;
+
+COMMIT;

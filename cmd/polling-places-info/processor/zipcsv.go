@@ -13,8 +13,8 @@ import (
 	"strings"
 )
 
-func New(name, table, url string, db *sql.DB) *Processor {
-	return &Processor{
+func NewZipCsvProcessor(name, table, url string, db *sql.DB) *ZipCsvProcessor {
+	return &ZipCsvProcessor{
 		name:  name,
 		table: table,
 		url:   url,
@@ -22,7 +22,7 @@ func New(name, table, url string, db *sql.DB) *Processor {
 	}
 }
 
-type Processor struct {
+type ZipCsvProcessor struct {
 	name            string
 	table           string
 	url             string
@@ -30,7 +30,7 @@ type Processor struct {
 	OverrideColumns []string
 }
 
-func (p *Processor) Run() {
+func (p *ZipCsvProcessor) Run() {
 	log.Printf("Buscando dados de %s.", p.name)
 
 	resp, err := http.Get(p.url)

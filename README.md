@@ -29,7 +29,8 @@ The following indicators are fetched and saved:
 Get the ballot box models and the list of electoral locations, zones and sections.
 
 - Ballot Box model list: [Dados Abertos TSE](https://dadosabertos.tse.jus.br/dataset/correspondencia-entre-numero-interno-e-modelo-da-urna-1)
-- ...
+- List of Electoral districts and Zones: https://resultados.tse.jus.br/oficial/ele2022/545/config/mun-e000545-cm.json
+- List of Electoral Sections: https://resultados.tse.jus.br/oficial/ele2022/arquivo-urna/407/config/XX/XX-p000407-cs.json (XX is the UF).
 
 ### Ballot Box Reports
 

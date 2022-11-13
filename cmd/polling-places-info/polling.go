@@ -3,12 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/lib/pq"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/leandrorondon/br-2022-elections-data/cmd/polling-places-info/processor"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -38,8 +38,13 @@ func main() {
 	}
 	defer db.Close()
 
-	modelosUrna := processor.New("Modelos de Urna x Número Interno", modelosUrnaTable, modelosUrnaURL, db)
+	modelosUrna := processor.NewZipCsvProcessor("Modelos de Urna x Número Interno", modelosUrnaTable, modelosUrnaURL, db)
 	modelosUrna.OverrideColumns = []string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}
 	modelosUrna.Run()
 
+	electoralZones := processor.NewZonesProcessor(db)
+	electoralZones.Run()
+
+	electoralSections := processor.NewSectionsProcessor(db)
+	electoralSections.Run()
 }
