@@ -24,18 +24,25 @@ The following indicators are fetched and saved:
 - Municipal Human Development Index (IDHM)
 - Child mortality rate
 
-### Election Results
+### Polling Places and Ballot Box info
 
-Total vote count per candidate per ballot box.
+Get the ballot box models and the list of electoral locations, zones and sections.
 
-- Source: Tribunal Superior Eleitoral - [Resultados 2022](https://dadosabertos.tse.jus.br/dataset/resultados-2022)
+- Ballot Box model list: [Dados Abertos TSE](https://dadosabertos.tse.jus.br/dataset/correspondencia-entre-numero-interno-e-modelo-da-urna-1)
+- ...
 
 ### Ballot Box Reports
 
 Get the number of each ballot box, which is then used to infer their model.
 
 - Source: Tribunal Superior Eleitoral -
-[Boletim de Urna](https://dadosabertos.tse.jus.br/dataset/resultados-2022-boletim-de-urna)
+  [Boletim de Urna](https://dadosabertos.tse.jus.br/dataset/resultados-2022-boletim-de-urna)
+
+### Election Results
+
+Total vote count per candidate per ballot box.
+
+- Source: Tribunal Superior Eleitoral - [Resultados 2022](https://dadosabertos.tse.jus.br/dataset/resultados-2022)
 
 ## Data layers
 

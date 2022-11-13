@@ -32,6 +32,9 @@ location: ## Run script to fetch location data from IBGE and save to the local D
 indicators: ## Run script to fetch indicators data from IBGE and save to the local DB.
 	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/indicators/indicators.go
 
+polling-places-info: ## Run script to fetch polling places and ballot boxes data from TSE and save to the local DB.
+	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/polling-places-info/polling.go
+
 from-scratch: start-local-db-server delete-local-db-no-conf create-local-db migrate-local-db location indicators
 
 .PHONY: build

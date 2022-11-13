@@ -96,52 +96,56 @@ func main() {
 		IndSalarioMedio, IndTaxaEscolarizacao, IndPIBPerCapita, IndIDHM, IndMortalidadeInfantil)
 
 	for i := 1; i < 10; i++ {
-		log.Printf("Obtendo indicadores de municípios com ID iniciando em %d.", i)
-		url := fmt.Sprintf("https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/%s/resultados/%dxxxxxx", indicadores, i)
-		resp, err := http.Get(url)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var b []byte
-		b, err = io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var indResp []IndicatorsResponse
-		err = json.Unmarshal(b, &indResp)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for _, ind := range indResp {
-			indDB, ok := indicatorDB[ind.ID]
-			if !ok {
-				continue
-			}
-
-			table := fmt.Sprintf("indicador_%s", indDB)
-			column := indDB
-			log.Printf("Salvando dados de %s de %d municípios.", indicatorNames[ind.ID], len(ind.Result))
-
-			for _, r := range ind.Result {
-				result := latestResult(r.Result)
-				if result == "" {
-					continue
-				}
-
-				query := fmt.Sprintf(`INSERT INTO %s(localidade, %s) VALUES ($1, $2) ON CONFLICT DO NOTHING`, table, column)
-				_, err := db.Exec(query, r.Localidade, result)
-				if err != nil {
-					fmt.Printf("Failed!\n")
-					log.Fatal(err)
-				}
-			}
-		}
+		getIndicatorsRange(db, indicadores, i)
 	}
 
 	log.Println("Indicadores salvos.")
+}
+
+func getIndicatorsRange(db *sql.DB, indicadores string, i int) {
+	log.Printf("Obtendo indicadores de municípios com ID iniciando em %d.", i)
+	url := fmt.Sprintf("https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/%s/resultados/%dxxxxxx", indicadores, i)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var b []byte
+	b, err = io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var indResp []IndicatorsResponse
+	err = json.Unmarshal(b, &indResp)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, ind := range indResp {
+		indDB, ok := indicatorDB[ind.ID]
+		if !ok {
+			continue
+		}
+
+		table := fmt.Sprintf("indicador_%s", indDB)
+		column := indDB
+		log.Printf("Salvando dados de %s de %d municípios.", indicatorNames[ind.ID], len(ind.Result))
+
+		for _, r := range ind.Result {
+			result := latestResult(r.Result)
+			if result == "" {
+				continue
+			}
+
+			query := fmt.Sprintf(`INSERT INTO %s(localidade, %s) VALUES ($1, $2) ON CONFLICT DO NOTHING`, table, column)
+			_, err := db.Exec(query, r.Localidade, result)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 }
 
 func latestResult(m map[string]string) string {
