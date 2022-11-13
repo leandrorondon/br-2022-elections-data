@@ -6,13 +6,23 @@ Presidential Elections in Brazil.
 
 ### Locations
 
-Locations data is obtained from the [IBGE Localidades API](https://servicodados.ibge.gov.br/api/docs/localidades)
+Locations data is obtained from the [IBGE Localidades API](https://servicodados.ibge.gov.br/api/docs/localidades).
 
-### County Population 
+The data of interest are regions, states and cities.
 
-Used to get the total population per county.
+### Indicators
 
-- Source: IBGE - TBD
+Indicators data is obtained from the [IBGE Pesquisas API](https://servicodados.ibge.gov.br/api/docs/pesquisas).
+
+The following indicators are fetched and saved:
+- Total population (2010)
+- Total population estimation (2021)
+- Demographic density
+- Average monthly salary of formal workers
+- School enrollment rate from 6 to 14 year old
+- GNP per capita (PIB)
+- Municipal Human Development Index (IDHM)
+- Child mortality rate
 
 ### Election Results
 
@@ -37,11 +47,11 @@ This layer stores raw data, in the same structure as in its source.
 
 ### Silver
 
-This layers contains transformed, aggregated and cleaned data. 
+This layer contains transformed, aggregated and cleaned data.
 It normalises column names and data, and group related data from different sources.
 
-For example, a same city has a different ID in IBGE and TSE, and cities population
-come from a different IBGE source. In the Silver layer, cities and their population 
+For example, a same city has a different ID in IBGE and TSE, and cities indicators
+come from a different IBGE source. In the Silver layer, cities and their indicators
 are saved in a single table.
 
 ### Gold
@@ -52,8 +62,10 @@ Gold layer stores aggregated data about the election results.
 
 ### Bronze
 
-From Locations:
+From Location:
 - `regioes` - id, nome, sigla
 - `ufs` - id, nome, sigla, regiao_id
 - `municipio` - id, nome, sigla, uf_id
 
+From Indicators:
+- `populacao` - localidade, populacao

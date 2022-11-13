@@ -29,10 +29,10 @@ migrate-local-db: ## Run schema migrations in the local DB.
 location: ## Run script to fetch location data from IBGE and save to the local DB.
 	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/locations/locations.go
 
-population: ## Run script to fetch population data from IBGE and save to the local DB.
-	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/populations/populations.go
+indicators: ## Run script to fetch indicators data from IBGE and save to the local DB.
+	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/indicators/indicators.go
 
-from-scratch: start-local-db-server delete-local-db-no-conf create-local-db migrate-local-db location population
+from-scratch: start-local-db-server delete-local-db-no-conf create-local-db migrate-local-db location indicators
 
 .PHONY: build
 .SILENT: help

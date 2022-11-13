@@ -49,18 +49,17 @@ func getAndSaveRegioes(api *api.API, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	log.Println("Regioes to insert:", len(regioes))
+	log.Println("Regioes obtidas:", len(regioes))
 
 	for _, r := range regioes {
 		query := `INSERT INTO regiao (id, nome, sigla) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
 		_, err := db.Exec(query, r.ID, r.Nome, r.Sigla)
 		if err != nil {
-			fmt.Printf("Failed!\n")
 			log.Fatal(err)
 		}
 	}
 
-	log.Println("Regioes saved.")
+	log.Println("Regioes salvas.")
 }
 
 func getAndSaveUFs(api *api.API, db *sql.DB) {
@@ -69,18 +68,17 @@ func getAndSaveUFs(api *api.API, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	log.Println("UFs to insert:", len(ufs))
+	log.Println("UFs obtidas:", len(ufs))
 
 	for _, r := range ufs {
 		query := `INSERT INTO uf (id, nome, sigla, regiao_id) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
 		_, err := db.Exec(query, r.ID, r.Nome, r.Sigla, r.Regiao.ID)
 		if err != nil {
-			fmt.Printf("Failed!\n")
 			log.Fatal(err)
 		}
 	}
 
-	log.Println("UFs saved.")
+	log.Println("UFs salvas.")
 }
 
 func getAndSaveMunicipios(api *api.API, db *sql.DB) {
@@ -89,16 +87,15 @@ func getAndSaveMunicipios(api *api.API, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	log.Println("Municipios to insert:", len(municipios))
+	log.Println("Municipios obtidos:", len(municipios))
 
 	for _, r := range municipios {
 		query := `INSERT INTO municipio (id, nome, uf_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
 		_, err := db.Exec(query, r.ID, r.Nome, r.Microrregiao.Mesorregiao.UF.ID)
 		if err != nil {
-			fmt.Printf("Failed!\n")
 			log.Fatal(err)
 		}
 	}
 
-	log.Println("Municipios saved.")
+	log.Println("Municipios salvos.")
 }
