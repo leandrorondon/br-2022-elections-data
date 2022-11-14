@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +10,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
 )
 
@@ -72,6 +74,10 @@ type IndicatorsResponse struct {
 	Result []IndicatorResult `json:"res"`
 }
 
+type StepsService interface {
+	Execute(ctx context.Context, step string, fn func(context.Context) error) error
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -86,7 +92,7 @@ func main() {
 		os.Getenv("DB_PASSWORD"),
 		dbName,
 	)
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err := sqlx.Open("postgres", psqlInfo)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,32 +101,38 @@ func main() {
 	indicadores := fmt.Sprintf("%d|%d|%d|%d|%d|%d|%d|%d", IndPopulacao, IndPopulacaoEstimada, IndDensidadeDemografica,
 		IndSalarioMedio, IndTaxaEscolarizacao, IndPIBPerCapita, IndIDHM, IndMortalidadeInfantil)
 
+	ctx := context.Background()
+	var steps StepsService = steps.NewService(db)
+
 	for i := 1; i < 10; i++ {
-		getIndicatorsRange(db, indicadores, i)
+		steps.Execute(ctx, fmt.Sprintf("indicadores-%d", i), func(ctx context.Context) error {
+			return getIndicatorsRange(ctx, db, indicadores, i)
+		})
 	}
 
 	log.Println("Indicadores salvos.")
 }
 
-func getIndicatorsRange(db *sql.DB, indicadores string, i int) {
+func getIndicatorsRange(ctx context.Context, db *sqlx.DB, indicadores string, i int) error {
 	log.Printf("Obtendo indicadores de municípios com ID iniciando em %d.", i)
 	url := fmt.Sprintf("https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/%s/resultados/%dxxxxxx", indicadores, i)
+
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 
 	var b []byte
 	b, err = io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var indResp []IndicatorsResponse
 	err = json.Unmarshal(b, &indResp)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for _, ind := range indResp {
@@ -140,12 +152,14 @@ func getIndicatorsRange(db *sql.DB, indicadores string, i int) {
 			}
 
 			query := fmt.Sprintf(`INSERT INTO %s(localidade, %s) VALUES ($1, $2) ON CONFLICT DO NOTHING`, table, column)
-			_, err := db.Exec(query, r.Localidade, result)
+			_, err := db.ExecContext(ctx, query, r.Localidade, result)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
 	}
+
+	return nil
 }
 
 func latestResult(m map[string]string) string {

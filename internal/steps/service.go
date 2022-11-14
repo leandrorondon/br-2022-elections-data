@@ -18,8 +18,6 @@ func NewService(db *sqlx.DB) *Service {
 }
 
 func (s *Service) Execute(ctx context.Context, step string, fn func(context.Context) error) error {
-	log.Printf("Iniciando %s.", step)
-
 	stepCompleted, err := s.repository.Exists(ctx, step)
 	if err != nil {
 		// Ignore and keep going...
@@ -30,6 +28,8 @@ func (s *Service) Execute(ctx context.Context, step string, fn func(context.Cont
 		log.Printf("Dados do passo %s já foram salvos anteriormente.", step)
 		return nil
 	}
+
+	log.Printf("Executando passo %s.", step)
 
 	err = fn(ctx)
 	if err != nil {
