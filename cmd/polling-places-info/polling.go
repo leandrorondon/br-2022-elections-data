@@ -8,7 +8,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-	"github.com/leandrorondon/br-2022-elections-data/cmd/polling-places-info/processor"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors"
 	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
 )
@@ -42,20 +42,20 @@ func main() {
 
 	stepsService := steps.NewService(db)
 
-	modelosUrna := processor.NewZipCsvProcessor("Modelos de Urna x Número Interno", "modelosurna", modelosUrnaTable, modelosUrnaURL, db, stepsService)
+	modelosUrna := processors.NewZipCsvProcessor("Modelos de Urna x Número Interno", "modelosurna", modelosUrnaTable, modelosUrnaURL, db, stepsService)
 	modelosUrna.OverrideColumns = []string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}
 	err = modelosUrna.Run(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	electoralZones := processor.NewZonesProcessor(db, stepsService)
+	electoralZones := processors.NewZonesProcessor(db, stepsService)
 	err = electoralZones.Run(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	electoralSections := processor.NewSectionsProcessor(db, stepsService)
+	electoralSections := processors.NewSectionsProcessor(db, stepsService)
 	err = electoralSections.Run(context.Background())
 	if err != nil {
 		log.Fatal(err)

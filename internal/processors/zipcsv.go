@@ -1,4 +1,4 @@
-package processor
+package processors
 
 import (
 	"archive/zip"
@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/text/encoding/charmap"
 )
 
 type StepsService interface {
@@ -104,7 +105,8 @@ func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File) error {
 		return err
 	}
 
-	parser := csv.NewReader(rc)
+	r := charmap.ISO8859_1.NewDecoder().Reader(rc)
+	parser := csv.NewReader(r)
 	parser.Comma = ';'
 
 	columns, err := parser.Read()

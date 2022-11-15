@@ -8,6 +8,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/leandrorondon/go-ibge-localidades v0.0.1
 	github.com/lib/pq v1.10.7
+	golang.org/x/text v0.3.7
 )
 
 require (
