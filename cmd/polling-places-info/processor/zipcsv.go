@@ -2,7 +2,7 @@ package processor
 
 import (
 	"archive/zip"
-	"database/sql"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -11,41 +11,54 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
-func NewZipCsvProcessor(name, table, url string, db *sql.DB) *ZipCsvProcessor {
+type StepsService interface {
+	Execute(ctx context.Context, step string, fn func(context.Context) error) error
+}
+
+func NewZipCsvProcessor(name, step, table, url string, db *sqlx.DB, stepsService StepsService) *ZipCsvProcessor {
 	return &ZipCsvProcessor{
-		name:  name,
-		table: table,
-		url:   url,
-		db:    db,
+		name:         name,
+		step:         step,
+		table:        table,
+		url:          url,
+		db:           db,
+		stepsService: stepsService,
 	}
 }
 
 type ZipCsvProcessor struct {
 	name            string
+	step            string
 	table           string
 	url             string
-	db              *sql.DB
+	db              *sqlx.DB
+	stepsService    StepsService
 	OverrideColumns []string
 }
 
-func (p *ZipCsvProcessor) Run() {
+func (p *ZipCsvProcessor) Run(ctx context.Context) error {
+	return p.stepsService.Execute(ctx, p.step, p.process)
+}
+
+func (p *ZipCsvProcessor) process(ctx context.Context) error {
 	log.Printf("Buscando dados de %s.", p.name)
 
 	resp, err := http.Get(p.url)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal("status code:", resp.StatusCode)
+		return fmt.Errorf("status code: %d", resp.StatusCode)
 	}
 
 	filePath := fmt.Sprintf("%stmp%d.zip", os.TempDir(), rand.Int())
 	out, err := os.Create(filePath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer out.Close()
 	defer os.Remove(filePath)
@@ -53,14 +66,14 @@ func (p *ZipCsvProcessor) Run() {
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	log.Printf("Arquivo zip salvo. Analisando conteúdo.")
 
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer r.Close()
 
@@ -71,36 +84,45 @@ func (p *ZipCsvProcessor) Run() {
 		}
 
 		count++
-		log.Printf("Processando arquivo %s.", f.Name)
 
-		rc, err := f.Open()
+		s := fmt.Sprintf("%s-%s", p.step, f.Name)
+		err = p.stepsService.Execute(ctx, s, func(ctx context.Context) error {
+			return p.processFile(ctx, f)
+		})
 		if err != nil {
-			log.Println("err:", err)
-			continue
+			return err
 		}
-
-		parser := csv.NewReader(rc)
-		parser.Comma = ';'
-
-		columns, err := parser.Read()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		queryColumns := columnListToQuery(columns)
-		if len(p.OverrideColumns) > 0 {
-			queryColumns = columnListToQuery(p.OverrideColumns)
-		}
-
-		queryPlaceholders := buildPlaceholders(parser.FieldsPerRecord)
-
-		saveCSVToDB(parser, p.db, p.table, queryColumns, queryPlaceholders)
 	}
 
 	log.Printf("Arquivos processados: %d.", count)
+	return nil
 }
 
-func saveCSVToDB(parser *csv.Reader, db *sql.DB, table, columns, placeholders string) {
+func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File) error {
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+
+	parser := csv.NewReader(rc)
+	parser.Comma = ';'
+
+	columns, err := parser.Read()
+	if err != nil {
+		return err
+	}
+
+	queryColumns := columnListToQuery(columns)
+	if len(p.OverrideColumns) > 0 {
+		queryColumns = columnListToQuery(p.OverrideColumns)
+	}
+
+	queryPlaceholders := buildPlaceholders(parser.FieldsPerRecord)
+
+	return p.saveCSVToDB(ctx, parser, queryColumns, queryPlaceholders)
+}
+
+func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns, placeholders string) error {
 	count := 0
 	for {
 		record, err := parser.Read()
@@ -108,24 +130,26 @@ func saveCSVToDB(parser *csv.Reader, db *sql.DB, table, columns, placeholders st
 			break
 		}
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		query := fmt.Sprintf(
 			`INSERT INTO %s(%s) VALUES (%s) ON CONFLICT DO NOTHING`,
-			table, columns, placeholders,
+			p.table, columns, placeholders,
 		)
 		values := recordToValues(record)
 
-		_, err = db.Exec(query, values...)
+		_, err = p.db.ExecContext(ctx, query, values...)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		count++
 	}
 
 	log.Printf("Registros salvos: %d.", count)
+
+	return nil
 }
 
 func columnListToQuery(columns []string) string {

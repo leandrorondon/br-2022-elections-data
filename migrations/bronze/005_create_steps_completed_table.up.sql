@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE TABLE steps_completed
 (
-    step VARCHAR(32) NOT NULL,
+    step VARCHAR(100) NOT NULL,
     PRIMARY KEY (step)
 );
 

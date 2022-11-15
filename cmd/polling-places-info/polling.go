@@ -1,13 +1,15 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"github.com/leandrorondon/br-2022-elections-data/cmd/polling-places-info/processor"
+	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
 )
 
@@ -32,19 +34,30 @@ func main() {
 		os.Getenv("DB_PASSWORD"),
 		dbName,
 	)
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err := sqlx.Open("postgres", psqlInfo)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	modelosUrna := processor.NewZipCsvProcessor("Modelos de Urna x Número Interno", modelosUrnaTable, modelosUrnaURL, db)
+	stepsService := steps.NewService(db)
+
+	modelosUrna := processor.NewZipCsvProcessor("Modelos de Urna x Número Interno", "modelosurna", modelosUrnaTable, modelosUrnaURL, db, stepsService)
 	modelosUrna.OverrideColumns = []string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}
-	modelosUrna.Run()
+	err = modelosUrna.Run(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	electoralZones := processor.NewZonesProcessor(db)
-	electoralZones.Run()
+	electoralZones := processor.NewZonesProcessor(db, stepsService)
+	err = electoralZones.Run(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	electoralSections := processor.NewSectionsProcessor(db)
-	electoralSections.Run()
+	electoralSections := processor.NewSectionsProcessor(db, stepsService)
+	err = electoralSections.Run(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
 }
