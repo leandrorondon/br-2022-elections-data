@@ -16,6 +16,8 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
+const insertBatch = 500
+
 type StepsService interface {
 	Execute(ctx context.Context, step string, fn func(context.Context) error) error
 }
@@ -119,13 +121,14 @@ func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File) error {
 		queryColumns = columnListToQuery(p.OverrideColumns)
 	}
 
-	queryPlaceholders := buildPlaceholders(parser.FieldsPerRecord)
-
-	return p.saveCSVToDB(ctx, parser, queryColumns, queryPlaceholders)
+	placeholders := buildPlaceholders(parser.FieldsPerRecord, insertBatch)
+	return p.saveCSVToDB(ctx, parser, queryColumns, parser.FieldsPerRecord, placeholders)
 }
 
-func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns, placeholders string) error {
+func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns string, fields int, placeholders string) error {
 	count := 0
+	insertCount := 0
+	values := make([]any, 0, insertBatch)
 	for {
 		record, err := parser.Read()
 		if err == io.EOF {
@@ -135,18 +138,41 @@ func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, c
 			return err
 		}
 
+		count++
+		insertCount++
+
+		v := recordToValues(record)
+		values = append(values, v...)
+
+		if insertCount%insertBatch == 0 {
+			insertCount = 0
+
+			query := fmt.Sprintf(
+				`INSERT INTO %s(%s) VALUES %s ON CONFLICT DO NOTHING`,
+				p.table, columns, placeholders,
+			)
+
+			_, err = p.db.ExecContext(ctx, query, values...)
+			if err != nil {
+				return err
+			}
+
+			values = nil
+		}
+	}
+
+	// Save remaining records
+	if insertCount > 0 {
+		placeholders = buildPlaceholders(parser.FieldsPerRecord, insertCount)
 		query := fmt.Sprintf(
-			`INSERT INTO %s(%s) VALUES (%s) ON CONFLICT DO NOTHING`,
+			`INSERT INTO %s(%s) VALUES %s ON CONFLICT DO NOTHING`,
 			p.table, columns, placeholders,
 		)
-		values := recordToValues(record)
 
-		_, err = p.db.ExecContext(ctx, query, values...)
+		_, err := p.db.ExecContext(ctx, query, values...)
 		if err != nil {
 			return err
 		}
-
-		count++
 	}
 
 	log.Printf("Registros salvos: %d.", count)
@@ -162,10 +188,15 @@ func columnListToQuery(columns []string) string {
 	return s[1:]
 }
 
-func buildPlaceholders(n int) string {
+func buildPlaceholders(f, batch int) string {
 	var s string
-	for i := 1; i <= n; i++ {
-		s = s + fmt.Sprintf(",$%d", i)
+	p := 1
+	for i := 0; i < batch; i++ {
+		var v string
+		for j := 0; j < f; j, p = j+1, p+1 {
+			v = v + fmt.Sprintf(",$%d", p)
+		}
+		s = s + fmt.Sprintf(",(%s)", v[1:])
 	}
 	return s[1:]
 }
