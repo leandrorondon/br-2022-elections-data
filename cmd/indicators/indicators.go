@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"github.com/leandrorondon/br-2022-elections-data/internal/httpwithretry"
 	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
@@ -125,7 +125,7 @@ func getIndicatorsRange(ctx context.Context, db *sqlx.DB, indicadores, s string,
 	log.Printf("[%s] Obtendo indicadores de municípios com ID iniciando em %d.", s, i)
 	url := fmt.Sprintf("https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/%s/resultados/%dxxxxxx", indicadores, i)
 
-	resp, err := http.Get(url)
+	resp, err := httpwithretry.Get(url, 2)
 	if err != nil {
 		return err
 	}

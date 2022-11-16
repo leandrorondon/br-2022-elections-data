@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/leandrorondon/br-2022-elections-data/internal/httpwithretry"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/text/encoding/charmap"
 )
@@ -51,7 +52,7 @@ func (p *ZipCsvProcessor) Run(ctx context.Context) error {
 func (p *ZipCsvProcessor) process(ctx context.Context) error {
 	log.Printf("[%s] Buscando dados de %s.", p.step, p.name)
 
-	resp, err := http.Get(p.url)
+	resp, err := httpwithretry.Get(p.url, 2)
 	if err != nil {
 		return err
 	}

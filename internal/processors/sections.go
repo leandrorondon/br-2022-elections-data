@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/leandrorondon/br-2022-elections-data/internal/httpwithretry"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -71,7 +68,7 @@ func (p *SectionsProcessor) Run(ctx context.Context) error {
 		s := fmt.Sprintf("tse-secoes-%s", u)
 		g.Go(func() error {
 			err := p.stepsService.Execute(gctx, s, func(ct context.Context) error {
-				return p.processUF(ct, u, s, 1)
+				return p.processUF(ct, u, s)
 			})
 			return err
 		})
@@ -80,19 +77,11 @@ func (p *SectionsProcessor) Run(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (p *SectionsProcessor) processUF(ctx context.Context, uf, s string, retry int) error {
+func (p *SectionsProcessor) processUF(ctx context.Context, uf, s string) error {
 	url := fmt.Sprintf(urlTemplate, uf)
-	resp, err := http.Get(url)
+	resp, err := httpwithretry.Get(url, 2)
 	if err != nil {
-		if retry > 3 {
-			return err
-		}
-
-		retry++
-		log.Printf("[%s] Falha ao obter dados de %s. %da tentativa em 5s.", s, strings.ToUpper(uf), retry)
-		time.Sleep(5 * time.Second)
-
-		return p.processUF(ctx, uf, s, retry)
+		return err
 	}
 
 	defer resp.Body.Close()

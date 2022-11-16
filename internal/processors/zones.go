@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/leandrorondon/br-2022-elections-data/internal/httpwithretry"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -53,7 +53,7 @@ func (p *ZonesProcessor) Run(ctx context.Context) error {
 }
 
 func (p *ZonesProcessor) process(ctx context.Context) error {
-	resp, err := http.Get(p.url)
+	resp, err := httpwithretry.Get(p.url, 2)
 	if err != nil {
 		return err
 	}
