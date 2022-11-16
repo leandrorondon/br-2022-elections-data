@@ -11,6 +11,7 @@ import (
 	"github.com/leandrorondon/br-2022-elections-data/internal/processors"
 	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -42,21 +43,25 @@ func main() {
 
 	stepsService := steps.NewService(db)
 
-	modelosUrna := processors.NewZipCsvProcessor("Modelos de Urna x Número Interno", "modelosurna", modelosUrnaTable, modelosUrnaURL, db, stepsService)
-	modelosUrna.OverrideColumns = []string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}
-	err = modelosUrna.Run(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
+	g, gctx := errgroup.WithContext(context.Background())
 
-	electoralZones := processors.NewZonesProcessor(db, stepsService)
-	err = electoralZones.Run(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
+	g.Go(func() error {
+		modelosUrna := processors.NewZipCsvProcessor("Modelos de Urna x Número Interno", "modelosurna", modelosUrnaTable, modelosUrnaURL, db, stepsService)
+		modelosUrna.OverrideColumns = []string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}
+		return modelosUrna.Run(gctx)
+	})
 
-	electoralSections := processors.NewSectionsProcessor(db, stepsService)
-	err = electoralSections.Run(context.Background())
+	g.Go(func() error {
+		electoralZones := processors.NewZonesProcessor(db, stepsService)
+		return electoralZones.Run(gctx)
+	})
+
+	g.Go(func() error {
+		electoralSections := processors.NewSectionsProcessor(db, stepsService)
+		return electoralSections.Run(gctx)
+	})
+
+	err = g.Wait()
 	if err != nil {
 		log.Fatal(err)
 	}

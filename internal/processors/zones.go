@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"io"
 	"net/http"
+
+	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
 )
 
 const electoralZonesURL = "https://resultados.tse.jus.br/oficial/ele2022/545/config/mun-e000545-cm.json"
@@ -69,17 +71,20 @@ func (p *ZonesProcessor) process(ctx context.Context) error {
 		return err
 	}
 
+	g, gctx := errgroup.WithContext(ctx)
+
 	for _, uf := range zonesResponse.ABR {
-		s := fmt.Sprintf("tse-zonas-%s", uf.CD)
-		err = p.stepsService.Execute(ctx, s, func(ctx context.Context) error {
-			return p.processUF(ctx, uf)
-		})
-		if err != nil {
+		u := uf
+		g.Go(func() error {
+			s := fmt.Sprintf("tse-zonas-%s", u.CD)
+			err = p.stepsService.Execute(gctx, s, func(ct context.Context) error {
+				return p.processUF(ct, u)
+			})
 			return err
-		}
+		})
 	}
 
-	return nil
+	return g.Wait()
 }
 
 func (p *ZonesProcessor) processUF(ctx context.Context, uf ABRZone) error {

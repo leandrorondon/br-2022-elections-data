@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/text/encoding/charmap"
 )
 
@@ -102,30 +103,36 @@ func (p *ZipCsvProcessor) process(ctx context.Context) error {
 }
 
 func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File) error {
-	rc, err := f.Open()
-	if err != nil {
-		return err
-	}
+	g, gctx := errgroup.WithContext(ctx)
 
-	r := charmap.ISO8859_1.NewDecoder().Reader(rc)
-	parser := csv.NewReader(r)
-	parser.Comma = ';'
+	g.Go(func() error {
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
 
-	columns, err := parser.Read()
-	if err != nil {
-		return err
-	}
+		r := charmap.ISO8859_1.NewDecoder().Reader(rc)
+		parser := csv.NewReader(r)
+		parser.Comma = ';'
 
-	queryColumns := columnListToQuery(columns)
-	if len(p.OverrideColumns) > 0 {
-		queryColumns = columnListToQuery(p.OverrideColumns)
-	}
+		columns, err := parser.Read()
+		if err != nil {
+			return err
+		}
 
-	placeholders := buildPlaceholders(parser.FieldsPerRecord, insertBatch)
-	return p.saveCSVToDB(ctx, parser, queryColumns, parser.FieldsPerRecord, placeholders)
+		queryColumns := columnListToQuery(columns)
+		if len(p.OverrideColumns) > 0 {
+			queryColumns = columnListToQuery(p.OverrideColumns)
+		}
+
+		placeholders := buildPlaceholders(parser.FieldsPerRecord, insertBatch)
+		return p.saveCSVToDB(gctx, parser, queryColumns, placeholders)
+	})
+
+	return g.Wait()
 }
 
-func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns string, fields int, placeholders string) error {
+func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns string, placeholders string) error {
 	count := 0
 	insertCount := 0
 	values := make([]any, 0, insertBatch)

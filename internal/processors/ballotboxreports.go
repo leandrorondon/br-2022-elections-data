@@ -29,9 +29,7 @@ type BallotBoxReportsProcessor struct {
 func (p *BallotBoxReportsProcessor) Run(ctx context.Context) error {
 	g, gctx := errgroup.WithContext(ctx)
 	for _, uf := range ufList {
-
 		p.processUF(gctx, g, uf)
-
 	}
 
 	return g.Wait()

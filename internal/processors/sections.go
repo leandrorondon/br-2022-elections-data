@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
 )
 
 const urlTemplate = "https://resultados.tse.jus.br/oficial/ele2022/arquivo-urna/407/config/%[1]s/%[1]s-p000407-cs.json"
@@ -62,17 +64,20 @@ type Section struct {
 }
 
 func (p *SectionsProcessor) Run(ctx context.Context) error {
+	g, gctx := errgroup.WithContext(ctx)
+
 	for _, uf := range ufList {
-		s := fmt.Sprintf("tse-secoes-%s", uf)
-		err := p.stepsService.Execute(ctx, s, func(ctx context.Context) error {
-			return p.processUF(ctx, uf, 1)
-		})
-		if err != nil {
+		u := uf
+		g.Go(func() error {
+			s := fmt.Sprintf("tse-secoes-%s", u)
+			err := p.stepsService.Execute(gctx, s, func(ct context.Context) error {
+				return p.processUF(ct, u, 1)
+			})
 			return err
-		}
+		})
 	}
 
-	return nil
+	return g.Wait()
 }
 
 func (p *SectionsProcessor) processUF(ctx context.Context, uf string, retry int) error {

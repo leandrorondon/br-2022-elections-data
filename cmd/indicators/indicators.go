@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -101,13 +102,22 @@ func main() {
 	indicadores := fmt.Sprintf("%d|%d|%d|%d|%d|%d|%d|%d", IndPopulacao, IndPopulacaoEstimada, IndDensidadeDemografica,
 		IndSalarioMedio, IndTaxaEscolarizacao, IndPIBPerCapita, IndIDHM, IndMortalidadeInfantil)
 
-	ctx := context.Background()
 	var steps StepsService = steps.NewService(db)
+	g, gctx := errgroup.WithContext(context.Background())
 
 	for i := 1; i < 10; i++ {
-		steps.Execute(ctx, fmt.Sprintf("indicadores-%d", i), func(ctx context.Context) error {
-			return getIndicatorsRange(ctx, db, indicadores, i)
+		n := i
+
+		g.Go(func() error {
+			return steps.Execute(gctx, fmt.Sprintf("indicadores-%d", n), func(ct context.Context) error {
+				return getIndicatorsRange(ct, db, indicadores, n)
+			})
 		})
+	}
+
+	err = g.Wait()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	log.Println("Indicadores salvos.")
