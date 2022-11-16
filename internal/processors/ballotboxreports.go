@@ -3,8 +3,10 @@ package processors
 import (
 	"context"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -25,7 +27,18 @@ type BallotBoxReportsProcessor struct {
 }
 
 func (p *BallotBoxReportsProcessor) Run(ctx context.Context) error {
+	g, gctx := errgroup.WithContext(ctx)
 	for _, uf := range ufList {
+
+		p.processUF(gctx, g, uf)
+
+	}
+
+	return g.Wait()
+}
+
+func (p *BallotBoxReportsProcessor) processUF(ctx context.Context, g *errgroup.Group, uf string) {
+	g.Go(func() error {
 		url := fmt.Sprintf(relatorioUrnaURLTemplate, strings.ToUpper(uf))
 		s := fmt.Sprintf("relatorio-urna-%s", uf)
 		modelosUrna := NewZipCsvProcessor(
@@ -33,7 +46,6 @@ func (p *BallotBoxReportsProcessor) Run(ctx context.Context) error {
 		if err := modelosUrna.Run(ctx); err != nil {
 			return err
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
