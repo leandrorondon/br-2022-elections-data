@@ -2,7 +2,7 @@ DOCKER_COMPOSE_EXEC_DB=docker-compose exec db psql -U postgres -c
 DOCKER_COMPOSE_RUN_GO=docker-compose run --rm golang
 
 start-local-db-server: ## Start a local postgresql instance.
-	@docker-compose up db -d
+	@docker-compose up -d db
 
 stop-local-db-server: ## Stop the running postgresql instance.
 	@docker-compose stop db
