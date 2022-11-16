@@ -66,7 +66,7 @@ func getAndSaveRegioes(ctx context.Context, api *api.API, db *sqlx.DB) error {
 		return err
 	}
 
-	log.Println("Regiões obtidas:", len(regioes))
+	log.Println("[localidades-regioes] Regiões obtidas:", len(regioes))
 
 	for _, r := range regioes {
 		query := `INSERT INTO regiao (id, nome, sigla) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
@@ -76,7 +76,7 @@ func getAndSaveRegioes(ctx context.Context, api *api.API, db *sqlx.DB) error {
 		}
 	}
 
-	log.Println("Regiões salvas.")
+	log.Println("[localidades-regioes] Regiões salvas.")
 
 	return nil
 }
@@ -87,7 +87,7 @@ func getAndSaveUFs(ctx context.Context, api *api.API, db *sqlx.DB) error {
 		return err
 	}
 
-	log.Println("UFs obtidas:", len(ufs))
+	log.Println("[localidades-ufs UFs obtidas:", len(ufs))
 
 	for _, r := range ufs {
 		query := `INSERT INTO uf (id, nome, sigla, regiao_id) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
@@ -97,7 +97,7 @@ func getAndSaveUFs(ctx context.Context, api *api.API, db *sqlx.DB) error {
 		}
 	}
 
-	log.Println("UFs salvas.")
+	log.Println("[localidades-ufs] UFs salvas.")
 
 	return nil
 }
@@ -108,7 +108,7 @@ func getAndSaveMunicipios(ctx context.Context, api *api.API, db *sqlx.DB) error 
 		return err
 	}
 
-	log.Println("Municipios obtidos:", len(municipios))
+	log.Println("[localidades-municipios] Municipios obtidos:", len(municipios))
 
 	for _, r := range municipios {
 		query := `INSERT INTO municipio (id, nome, uf_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
@@ -118,7 +118,7 @@ func getAndSaveMunicipios(ctx context.Context, api *api.API, db *sqlx.DB) error 
 		}
 	}
 
-	log.Println("Municipios salvos.")
+	log.Println("[localidades-municipios] Municipios salvos.")
 
 	return nil
 }

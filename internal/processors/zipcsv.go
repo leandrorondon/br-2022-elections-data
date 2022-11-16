@@ -49,7 +49,7 @@ func (p *ZipCsvProcessor) Run(ctx context.Context) error {
 }
 
 func (p *ZipCsvProcessor) process(ctx context.Context) error {
-	log.Printf("Buscando dados de %s.", p.name)
+	log.Printf("[%s] Buscando dados de %s.", p.step, p.name)
 
 	resp, err := http.Get(p.url)
 	if err != nil {
@@ -73,7 +73,7 @@ func (p *ZipCsvProcessor) process(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("Arquivo zip salvo. Analisando conteúdo.")
+	log.Printf("[%s] Arquivo zip salvo. Analisando conteúdo.", p.step)
 
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
@@ -91,18 +91,18 @@ func (p *ZipCsvProcessor) process(ctx context.Context) error {
 
 		s := fmt.Sprintf("%s-%s", p.step, f.Name)
 		err = p.stepsService.Execute(ctx, s, func(ctx context.Context) error {
-			return p.processFile(ctx, f)
+			return p.processFile(ctx, f, s)
 		})
 		if err != nil {
 			return err
 		}
 	}
 
-	log.Printf("Arquivos processados: %d.", count)
+	log.Printf("[%s] Arquivos processados: %d.", p.step, count)
 	return nil
 }
 
-func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File) error {
+func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File, s string) error {
 	g, gctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
@@ -126,13 +126,13 @@ func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File) error {
 		}
 
 		placeholders := buildPlaceholders(parser.FieldsPerRecord, insertBatch)
-		return p.saveCSVToDB(gctx, parser, queryColumns, placeholders)
+		return p.saveCSVToDB(gctx, parser, queryColumns, placeholders, s)
 	})
 
 	return g.Wait()
 }
 
-func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns string, placeholders string) error {
+func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns, placeholders, s string) error {
 	count := 0
 	insertCount := 0
 	values := make([]any, 0, insertBatch)
@@ -182,7 +182,7 @@ func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, c
 		}
 	}
 
-	log.Printf("Registros salvos: %d.", count)
+	log.Printf("[%s] Registros salvos: %d.", s, count)
 
 	return nil
 }

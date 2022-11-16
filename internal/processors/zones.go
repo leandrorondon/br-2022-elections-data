@@ -93,7 +93,10 @@ func (p *ZonesProcessor) processUF(ctx context.Context, uf ABRZone) error {
 	}
 
 	for _, m := range uf.MU {
-		p.processMunicipio(ctx, m, uf)
+		err := p.processMunicipio(ctx, m, uf)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

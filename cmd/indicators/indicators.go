@@ -108,23 +108,21 @@ func main() {
 	for i := 1; i < 10; i++ {
 		n := i
 
+		s := fmt.Sprintf("indicadores-%d", n)
 		g.Go(func() error {
-			return steps.Execute(gctx, fmt.Sprintf("indicadores-%d", n), func(ct context.Context) error {
-				return getIndicatorsRange(ct, db, indicadores, n)
+			return steps.Execute(gctx, s, func(ct context.Context) error {
+				return getIndicatorsRange(ct, db, indicadores, s, n)
 			})
 		})
 	}
 
-	err = g.Wait()
-	if err != nil {
+	if g.Wait() != nil {
 		log.Fatal(err)
 	}
-
-	log.Println("Indicadores salvos.")
 }
 
-func getIndicatorsRange(ctx context.Context, db *sqlx.DB, indicadores string, i int) error {
-	log.Printf("Obtendo indicadores de municípios com ID iniciando em %d.", i)
+func getIndicatorsRange(ctx context.Context, db *sqlx.DB, indicadores, s string, i int) error {
+	log.Printf("[%s] Obtendo indicadores de municípios com ID iniciando em %d.", s, i)
 	url := fmt.Sprintf("https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/%s/resultados/%dxxxxxx", indicadores, i)
 
 	resp, err := http.Get(url)
@@ -153,7 +151,7 @@ func getIndicatorsRange(ctx context.Context, db *sqlx.DB, indicadores string, i 
 
 		table := fmt.Sprintf("indicador_%s", indDB)
 		column := indDB
-		log.Printf("Salvando dados de %s de %d municípios.", indicatorNames[ind.ID], len(ind.Result))
+		log.Printf("[%s] Salvando dados de %s de %d municípios.", s, indicatorNames[ind.ID], len(ind.Result))
 
 		for _, r := range ind.Result {
 			result := latestResult(r.Result)

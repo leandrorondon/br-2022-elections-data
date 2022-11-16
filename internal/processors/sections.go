@@ -68,10 +68,10 @@ func (p *SectionsProcessor) Run(ctx context.Context) error {
 
 	for _, uf := range ufList {
 		u := uf
+		s := fmt.Sprintf("tse-secoes-%s", u)
 		g.Go(func() error {
-			s := fmt.Sprintf("tse-secoes-%s", u)
 			err := p.stepsService.Execute(gctx, s, func(ct context.Context) error {
-				return p.processUF(ct, u, 1)
+				return p.processUF(ct, u, s, 1)
 			})
 			return err
 		})
@@ -80,7 +80,7 @@ func (p *SectionsProcessor) Run(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (p *SectionsProcessor) processUF(ctx context.Context, uf string, retry int) error {
+func (p *SectionsProcessor) processUF(ctx context.Context, uf, s string, retry int) error {
 	url := fmt.Sprintf(urlTemplate, uf)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -89,10 +89,10 @@ func (p *SectionsProcessor) processUF(ctx context.Context, uf string, retry int)
 		}
 
 		retry++
-		log.Printf("Falha ao obter dados de %s. %da tentativa em 5s.", strings.ToUpper(uf), retry)
+		log.Printf("[%s] Falha ao obter dados de %s. %da tentativa em 5s.", s, strings.ToUpper(uf), retry)
 		time.Sleep(5 * time.Second)
 
-		return p.processUF(ctx, uf, retry)
+		return p.processUF(ctx, uf, s, retry)
 	}
 
 	defer resp.Body.Close()
