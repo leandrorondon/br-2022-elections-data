@@ -12,21 +12,21 @@ The data of interest are regions, states and cities.
 
 ### Indicators
 
-Indicators data is obtained from the [IBGE Pesquisas API](https://servicodados.ibge.gov.br/api/docs/pesquisas).
+Indicator data is obtained from the [IBGE Pesquisas API](https://servicodados.ibge.gov.br/api/docs/pesquisas).
 
 The following indicators are fetched and saved:
 - Total population (2010)
 - Total population estimation (2021)
 - Demographic density
 - Average monthly salary of formal workers
-- School enrollment rate from 6 to 14 year old
+- School enrollment rate from 6 to 14 years old
 - GNP per capita (PIB)
 - Municipal Human Development Index (IDHM)
 - Child mortality rate
 
 ### Polling Places and Ballot Box info
 
-Get the ballot box models and the list of electoral locations, zones and sections.
+Get the ballot box models and the electoral locations, zones and sections list.
 
 - Ballot Box model list: [Dados Abertos TSE](https://dadosabertos.tse.jus.br/dataset/correspondencia-entre-numero-interno-e-modelo-da-urna-1)
 - List of Electoral districts and Zones: https://resultados.tse.jus.br/oficial/ele2022/545/config/mun-e000545-cm.json
@@ -56,15 +56,15 @@ This layer stores raw data, in the same structure as in its source.
 ### Silver
 
 This layer contains transformed, aggregated and cleaned data.
-It normalises column names and data, and group related data from different sources.
+It normalises column names and data, and groups related data from different sources.
 
-For example, a same city has a different ID in IBGE and TSE, and cities indicators
+For example, the same city has a different ID in IBGE and TSE, and city indicators
 come from a different IBGE source. In the Silver layer, cities and their indicators
 are saved in a single table.
 
 ### Gold
 
-Gold layer stores aggregated data about the election results.
+The gold layer stores aggregated data about the election results.
 
 ## Data structure
 
