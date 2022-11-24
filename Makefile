@@ -38,9 +38,12 @@ polling-places-info: ## Run script to fetch polling places and ballot boxes data
 ballot-box-reports: ## Run script to fetch ballot box reports data from TSE and save to the local DB.
 	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/ballotbox-reports/reports.go
 
-from-scratch: start-local-db-server delete-local-db-no-conf create-local-db migrate-local-db location indicators polling-places-info ballot-box-reports ## Delete the current databases, recreate and populate them with data.
+section-results: ## Run script to fetch section results from TSE and save to the local DB.
+	@$(DOCKER_COMPOSE_RUN_GO) go run cmd/section-results/results.go
 
-bronze: location indicators polling-places-info ballot-box-reports ## Populate bronze database with raw data from different sources.
+from-scratch: start-local-db-server delete-local-db-no-conf create-local-db migrate-local-db location indicators polling-places-info ballot-box-reports section-results ## Delete the current databases, recreate and populate them with data.
+
+bronze: location indicators polling-places-info ballot-box-reports section-results ## Populate bronze database with raw data from different sources.
 
 .PHONY: build
 .SILENT: help

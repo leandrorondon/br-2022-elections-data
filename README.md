@@ -34,16 +34,14 @@ Get the ballot box models and the electoral locations, zones and sections list.
 
 ### Ballot Box Reports
 
-Get the number of each ballot box, which is then used to infer their model.
-
 - Source: Tribunal Superior Eleitoral -
   [Boletim de Urna](https://dadosabertos.tse.jus.br/dataset/resultados-2022-boletim-de-urna)
 
-### Election Results
+### Section Results
 
-Total vote count per candidate per ballot box.
+Total vote count per candidate per Section.
 
-- Source: Tribunal Superior Eleitoral - [Resultados 2022](https://dadosabertos.tse.jus.br/dataset/resultados-2022)
+- Source: Tribunal Superior Eleitoral - [Resultados 2022](https://dadosabertos.tse.jus.br/dataset/resultados-2022/resource/f509562b-3b7f-487d-ad61-145a7ae6b96f)
 
 ## Data layers
 
