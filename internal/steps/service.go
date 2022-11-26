@@ -2,6 +2,7 @@ package steps
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/jmoiron/sqlx"
@@ -20,7 +21,9 @@ func NewService(db *sqlx.DB) *Service {
 func (s *Service) Execute(ctx context.Context, step string, fn func(context.Context) error) error {
 	stepCompleted, err := s.repository.Exists(ctx, step)
 	if err != nil {
-		// Ignore and keep going...
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
 		log.Printf("[%s] Erro ao verificar se passo já foi executado - %v.", step, err)
 	}
 

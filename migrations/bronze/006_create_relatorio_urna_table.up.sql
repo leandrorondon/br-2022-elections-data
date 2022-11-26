@@ -47,7 +47,7 @@ CREATE TABLE relatorio_urna
     dt_emissao_bu VARCHAR(19) NOT NULL,
     nr_junta_apuradora INT NOT NULL,
     nr_turma_apuradora INT NOT NULL,
-    PRIMARY KEY (nr_urna_efetivada, nr_votavel)
+    PRIMARY KEY (cd_eleicao, nr_turno, nr_secao, nr_urna_efetivada, nr_votavel)
 );
 
 COMMIT;

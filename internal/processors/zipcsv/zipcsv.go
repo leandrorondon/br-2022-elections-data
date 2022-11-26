@@ -205,7 +205,7 @@ func (p *Processor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns
 			insertCount = 0
 
 			query := fmt.Sprintf(
-				`INSERT INTO %s(%s) VALUES %s ON CONFLICT DO NOTHING`,
+				`INSERT INTO %s(%s) VALUES %s`,
 				p.table, columns, placeholders,
 			)
 
@@ -222,7 +222,7 @@ func (p *Processor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns
 	if insertCount > 0 {
 		placeholders = buildPlaceholders(parser.FieldsPerRecord, insertCount)
 		query := fmt.Sprintf(
-			`INSERT INTO %s(%s) VALUES %s ON CONFLICT DO NOTHING`,
+			`INSERT INTO %s(%s) VALUES %s`,
 			p.table, columns, placeholders,
 		)
 
