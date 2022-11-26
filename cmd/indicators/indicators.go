@@ -17,9 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	dbName = "bronze"
-)
+const dbName = "bronze"
 
 const (
 	IndPopulacao            = 25207
@@ -31,17 +29,6 @@ const (
 	IndIDHM                 = 30255
 	IndMortalidadeInfantil  = 30279
 )
-
-var latestResultPerIndicator = map[int]string{
-	IndPopulacao:            "2010",
-	IndPopulacaoEstimada:    "2021",
-	IndDensidadeDemografica: "2010",
-	IndSalarioMedio:         "2020",
-	IndTaxaEscolarizacao:    "2010",
-	IndPIBPerCapita:         "2019",
-	IndIDHM:                 "2010",
-	IndMortalidadeInfantil:  "2020",
-}
 
 var indicatorNames = map[int]string{
 	IndPopulacao:            "População (2010)",
@@ -117,7 +104,7 @@ func main() {
 	}
 
 	if g.Wait() != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 }
 
@@ -125,7 +112,7 @@ func getIndicatorsRange(ctx context.Context, db *sqlx.DB, indicadores, s string,
 	log.Printf("[%s] Obtendo indicadores de municípios com ID iniciando em %d.", s, i)
 	url := fmt.Sprintf("https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/%s/resultados/%dxxxxxx", indicadores, i)
 
-	resp, err := httpwithretry.Get(url, 2)
+	resp, err := httpwithretry.Get(ctx, url, 2)
 	if err != nil {
 		return err
 	}

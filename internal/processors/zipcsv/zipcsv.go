@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -19,6 +20,8 @@ import (
 )
 
 const insertBatch = 500
+
+var ErrUnexpectedStatusCode = errors.New("unexpected status code")
 
 type StepsService interface {
 	Execute(ctx context.Context, step string, fn func(context.Context) error) error
@@ -82,7 +85,7 @@ func (p *Processor) process(ctx context.Context) error {
 
 	fileName := path.Base(p.url)
 	dir := fmt.Sprintf("%s/eleicoes", os.TempDir())
-	os.Mkdir(dir, 0644)
+	_ = os.Mkdir(dir, 0644)
 	filePath := fmt.Sprintf("%s/%s", dir, fileName)
 
 	r, err := zip.OpenReader(filePath)
@@ -94,12 +97,14 @@ func (p *Processor) process(ctx context.Context) error {
 
 	log.Printf("[%s] Baixando %s.", p.step, fileName)
 
-	resp, err := httpwithretry.Get(p.url, 2)
+	resp, err := httpwithretry.Get(ctx, p.url, 2)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("status code: %d", resp.StatusCode)
+		return fmt.Errorf("%w: %d", ErrUnexpectedStatusCode, resp.StatusCode)
 	}
 
 	out, err := os.Create(filePath)
@@ -149,6 +154,7 @@ func (p *Processor) processZip(ctx context.Context, r *zip.ReadCloser) error {
 	}
 
 	log.Printf("[%s] Arquivos processados: %d.", p.step, count)
+
 	return nil
 }
 
@@ -176,6 +182,7 @@ func (p *Processor) processFile(ctx context.Context, f *zip.File, s string) erro
 		}
 
 		placeholders := buildPlaceholders(parser.FieldsPerRecord, insertBatch)
+
 		return p.saveCSVToDB(gctx, parser, queryColumns, placeholders, s)
 	})
 
@@ -188,7 +195,7 @@ func (p *Processor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns
 	values := make([]any, 0, insertBatch)
 	for {
 		record, err := parser.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -251,17 +258,19 @@ func buildPlaceholders(f, batch int) string {
 	for i := 0; i < batch; i++ {
 		var v string
 		for j := 0; j < f; j, p = j+1, p+1 {
-			v = v + fmt.Sprintf(",$%d", p)
+			v += fmt.Sprintf(",$%d", p)
 		}
-		s = s + fmt.Sprintf(",(%s)", v[1:])
+		s += fmt.Sprintf(",(%s)", v[1:])
 	}
+
 	return s[1:]
 }
 
 func recordToValues(record []string) []any {
-	var a []any
+	a := make([]any, 0, len(record))
 	for _, r := range record {
 		a = append(a, r)
 	}
+
 	return a
 }

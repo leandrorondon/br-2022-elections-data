@@ -17,7 +17,7 @@ const (
 	dbName = "bronze"
 
 	sectionResultTable = "votacao_secao"
-	sectionResultUrl   = "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2022_BR.zip"
+	sectionResultURL   = "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2022_BR.zip"
 )
 
 func main() {
@@ -46,10 +46,10 @@ func main() {
 		Name:  "Votação por Seção",
 		Step:  "votacao-secao",
 		Table: sectionResultTable,
-		URL:   sectionResultUrl,
+		URL:   sectionResultURL,
 	}
 	err = zipcsv.New(db, stepsService, config, zipcsv.WithKeepDownload(true)).Run(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 }

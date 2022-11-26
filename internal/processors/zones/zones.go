@@ -54,7 +54,7 @@ func (p *Processor) Run(ctx context.Context) error {
 }
 
 func (p *Processor) process(ctx context.Context) error {
-	resp, err := httpwithretry.Get(p.url, 2)
+	resp, err := httpwithretry.Get(ctx, p.url, 2)
 	if err != nil {
 		return err
 	}
@@ -120,6 +120,7 @@ func (p *Processor) processMunicipio(ctx context.Context, m MUZone, uf ABRZone) 
 func (p *Processor) saveUF(ctx context.Context, uf *ABRZone) error {
 	query := `INSERT INTO uf_tse(cd, ds) VALUES ($1, $2) ON CONFLICT DO NOTHING`
 	_, err := p.db.ExecContext(ctx, query, uf.CD, uf.DS)
+
 	return err
 }
 
@@ -129,7 +130,9 @@ func (p *Processor) saveMunicipio(ctx context.Context, m *MUZone, uf string) err
 	if m.CDI != "" {
 		cdi = &m.CDI
 	}
+
 	_, err := p.db.ExecContext(ctx, query, m.CD, cdi, m.NM, m.C, uf)
+
 	return err
 }
 

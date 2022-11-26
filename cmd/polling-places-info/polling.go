@@ -3,14 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/leandrorondon/br-2022-elections-data/internal/processors/sections"
-	"github.com/leandrorondon/br-2022-elections-data/internal/processors/zipcsv"
-	"github.com/leandrorondon/br-2022-elections-data/internal/processors/zones"
 	"log"
 	"os"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/sections"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/zipcsv"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/zones"
 	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
@@ -73,6 +73,6 @@ func main() {
 
 	err = g.Wait()
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 }

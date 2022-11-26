@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	ibgelocalidades "github.com/leandrorondon/go-ibge-localidades"
 	"github.com/leandrorondon/go-ibge-localidades/api"
 	_ "github.com/lib/pq"
@@ -38,7 +38,7 @@ func main() {
 	)
 	db, err := sqlx.Open("postgres", psqlInfo)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer db.Close()
 
@@ -47,17 +47,28 @@ func main() {
 	ctx := context.Background()
 	api := ibgelocalidades.New()
 
-	steps.Execute(ctx, "localidades-regioes", func(ctx context.Context) error {
+	err = steps.Execute(ctx, "localidades-regioes", func(ctx context.Context) error {
 		return getAndSaveRegioes(ctx, api, db)
 	})
+	if err != nil {
+		log.Print(err)
+		return
+	}
 
-	steps.Execute(ctx, "localidades-ufs", func(ctx context.Context) error {
+	err = steps.Execute(ctx, "localidades-ufs", func(ctx context.Context) error {
 		return getAndSaveUFs(ctx, api, db)
 	})
+	if err != nil {
+		log.Print(err)
+		return
+	}
 
-	steps.Execute(ctx, "localidades-municipios", func(ctx context.Context) error {
+	err = steps.Execute(ctx, "localidades-municipios", func(ctx context.Context) error {
 		return getAndSaveMunicipios(ctx, api, db)
 	})
+	if err != nil {
+		log.Print(err)
+	}
 }
 
 func getAndSaveRegioes(ctx context.Context, api *api.API, db *sqlx.DB) error {
@@ -82,7 +93,7 @@ func getAndSaveRegioes(ctx context.Context, api *api.API, db *sqlx.DB) error {
 }
 
 func getAndSaveUFs(ctx context.Context, api *api.API, db *sqlx.DB) error {
-	ufs, err := api.UFs.UFs(context.Background())
+	ufs, err := api.UFs.UFs(ctx)
 	if err != nil {
 		return err
 	}
@@ -103,7 +114,7 @@ func getAndSaveUFs(ctx context.Context, api *api.API, db *sqlx.DB) error {
 }
 
 func getAndSaveMunicipios(ctx context.Context, api *api.API, db *sqlx.DB) error {
-	municipios, err := api.Municipios.Municipios(context.Background())
+	municipios, err := api.Municipios.Municipios(ctx)
 	if err != nil {
 		return err
 	}

@@ -69,7 +69,7 @@ func (p *Processor) Run(ctx context.Context) error {
 		s := fmt.Sprintf("tse-secoes-%s", u)
 		g.Go(func() error {
 			err := p.stepsService.Execute(gctx, s, func(ct context.Context) error {
-				return p.processUF(ct, u, s)
+				return p.processUF(ct, u)
 			})
 			return err
 		})
@@ -78,9 +78,9 @@ func (p *Processor) Run(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (p *Processor) processUF(ctx context.Context, uf, s string) error {
+func (p *Processor) processUF(ctx context.Context, uf string) error {
 	url := fmt.Sprintf(urlTemplate, uf)
-	resp, err := httpwithretry.Get(url, 2)
+	resp, err := httpwithretry.Get(ctx, url, 2)
 	if err != nil {
 		return err
 	}
@@ -117,6 +117,7 @@ func (p *Processor) processMunicipio(ctx context.Context, m MUSection, u ABRSect
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -126,7 +127,8 @@ func (p *Processor) processZona(ctx context.Context, z Zone, m MUSection) error 
 	}
 
 	for _, s := range z.SEC {
-		if err := p.saveSecao(ctx, z.CD, m.CD, &s); err != nil {
+		sec := s
+		if err := p.saveSecao(ctx, z.CD, m.CD, &sec); err != nil {
 			return err
 		}
 	}
