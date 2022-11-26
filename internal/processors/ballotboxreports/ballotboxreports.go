@@ -51,7 +51,7 @@ func (p *Processor) processUF(ctx context.Context, g *errgroup.Group, uf string)
 			Table: relatorioUrnaTable,
 			URL:   url,
 		}
-		modelosUrna := zipcsv.New(p.db, p.stepsService, config)
+		modelosUrna := zipcsv.New(p.db, p.stepsService, config, zipcsv.WithKeepDownload(true))
 		if err := modelosUrna.Run(ctx); err != nil {
 			return err
 		}

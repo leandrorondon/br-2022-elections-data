@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -80,6 +80,20 @@ func (p *Processor) Run(ctx context.Context) error {
 func (p *Processor) process(ctx context.Context) error {
 	log.Printf("[%s] Buscando dados de %s.", p.step, p.name)
 
+	fileName := path.Base(p.url)
+	dir := fmt.Sprintf("%s/eleicoes", os.TempDir())
+	os.Mkdir(dir, 0644)
+	filePath := fmt.Sprintf("%s/%s", dir, fileName)
+
+	r, err := zip.OpenReader(filePath)
+	if err == nil {
+		log.Printf("[%s] Arquivo zip já existe. Analisando conteúdo.", p.step)
+		defer r.Close()
+		return p.processZip(ctx, r)
+	}
+
+	log.Printf("[%s] Baixando %s.", p.step, fileName)
+
 	resp, err := httpwithretry.Get(p.url, 2)
 	if err != nil {
 		return err
@@ -88,7 +102,6 @@ func (p *Processor) process(ctx context.Context) error {
 		return fmt.Errorf("status code: %d", resp.StatusCode)
 	}
 
-	filePath := fmt.Sprintf("%stmp%d.zip", os.TempDir(), rand.Int())
 	out, err := os.Create(filePath)
 	if err != nil {
 		return err
@@ -108,12 +121,16 @@ func (p *Processor) process(ctx context.Context) error {
 
 	log.Printf("[%s] Arquivo zip salvo. Analisando conteúdo.", p.step)
 
-	r, err := zip.OpenReader(filePath)
+	r, err = zip.OpenReader(filePath)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 
+	return p.processZip(ctx, r)
+}
+
+func (p *Processor) processZip(ctx context.Context, r *zip.ReadCloser) error {
 	count := 0
 	for _, f := range r.File {
 		if !strings.Contains(f.Name, ".csv") {
@@ -123,7 +140,7 @@ func (p *Processor) process(ctx context.Context) error {
 		count++
 
 		s := fmt.Sprintf("%s-%s", p.step, f.Name)
-		err = p.stepsService.Execute(ctx, s, func(ctx context.Context) error {
+		err := p.stepsService.Execute(ctx, s, func(ctx context.Context) error {
 			return p.processFile(ctx, f, s)
 		})
 		if err != nil {

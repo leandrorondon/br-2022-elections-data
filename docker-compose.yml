@@ -18,6 +18,7 @@ services:
     image: golang:1.19-alpine
     volumes:
       - .:/go/elections
+      - /tmp:/tmp
     working_dir: /go/elections
 
 volumes:
