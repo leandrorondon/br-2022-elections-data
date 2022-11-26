@@ -39,6 +39,12 @@ func WithColumns(columns []string) Option {
 	}
 }
 
+func WithKeepDownload(keep bool) Option {
+	return func(p *Processor) {
+		p.keepDownload = keep
+	}
+}
+
 func New(db *sqlx.DB, stepsService StepsService, config Config, opts ...Option) *Processor {
 	p := &Processor{
 		name:         config.Name,
@@ -64,6 +70,7 @@ type Processor struct {
 	db              *sqlx.DB
 	stepsService    StepsService
 	overrideColumns []string
+	keepDownload    bool
 }
 
 func (p *Processor) Run(ctx context.Context) error {
@@ -86,8 +93,12 @@ func (p *Processor) process(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	defer out.Close()
-	defer os.Remove(filePath)
+
+	if !p.keepDownload {
+		defer os.Remove(filePath)
+	}
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
