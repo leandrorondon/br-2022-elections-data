@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/ballotboxreports"
 	"log"
 	"os"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-	"github.com/leandrorondon/br-2022-elections-data/internal/processors"
 	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
 )
@@ -39,7 +39,7 @@ func main() {
 
 	stepsService := steps.NewService(db)
 
-	reports := processors.NewBallotBoxReportsProcessor(db, stepsService)
+	reports := ballotboxreports.New(db, stepsService)
 	err = reports.Run(context.Background())
 	if err != nil {
 		log.Fatal(err)

@@ -1,4 +1,4 @@
-package processors
+package sections
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leandrorondon/br-2022-elections-data/internal/httpwithretry"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/zipcsv"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -18,19 +19,19 @@ var ufList = []string{
 	"pb", "pe", "pi", "pr", "rj", "rn", "ro", "rr", "rs", "sc", "se", "sp", "to", "zz",
 }
 
-func NewSectionsProcessor(db *sqlx.DB, stepsService StepsService) *SectionsProcessor {
-	return &SectionsProcessor{
+func New(db *sqlx.DB, stepsService zipcsv.StepsService) *Processor {
+	return &Processor{
 		db:           db,
 		stepsService: stepsService,
 	}
 }
 
-type SectionsProcessor struct {
+type Processor struct {
 	db           *sqlx.DB
-	stepsService StepsService
+	stepsService zipcsv.StepsService
 }
 
-type SectionsResponse struct {
+type Response struct {
 	DG  string
 	HG  string
 	F   string
@@ -60,7 +61,7 @@ type Section struct {
 	NSP string
 }
 
-func (p *SectionsProcessor) Run(ctx context.Context) error {
+func (p *Processor) Run(ctx context.Context) error {
 	g, gctx := errgroup.WithContext(ctx)
 
 	for _, uf := range ufList {
@@ -77,7 +78,7 @@ func (p *SectionsProcessor) Run(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (p *SectionsProcessor) processUF(ctx context.Context, uf, s string) error {
+func (p *Processor) processUF(ctx context.Context, uf, s string) error {
 	url := fmt.Sprintf(urlTemplate, uf)
 	resp, err := httpwithretry.Get(url, 2)
 	if err != nil {
@@ -91,7 +92,7 @@ func (p *SectionsProcessor) processUF(ctx context.Context, uf, s string) error {
 		return err
 	}
 
-	var sectionsResponse SectionsResponse
+	var sectionsResponse Response
 	err = json.Unmarshal(b, &sectionsResponse)
 	if err != nil {
 		return err
@@ -107,7 +108,7 @@ func (p *SectionsProcessor) processUF(ctx context.Context, uf, s string) error {
 	return nil
 }
 
-func (p *SectionsProcessor) processMunicipio(ctx context.Context, m MUSection, u ABRSection) error {
+func (p *Processor) processMunicipio(ctx context.Context, m MUSection, u ABRSection) error {
 	if err := p.saveMunicipio(ctx, &m, u.CD); err != nil {
 		return err
 	}
@@ -119,7 +120,7 @@ func (p *SectionsProcessor) processMunicipio(ctx context.Context, m MUSection, u
 	return nil
 }
 
-func (p *SectionsProcessor) processZona(ctx context.Context, z Zone, m MUSection) error {
+func (p *Processor) processZona(ctx context.Context, z Zone, m MUSection) error {
 	if err := p.saveZona(ctx, z.CD, m.CD); err != nil {
 		return err
 	}
@@ -133,19 +134,19 @@ func (p *SectionsProcessor) processZona(ctx context.Context, z Zone, m MUSection
 	return nil
 }
 
-func (p *SectionsProcessor) saveMunicipio(ctx context.Context, m *MUSection, uf string) error {
+func (p *Processor) saveMunicipio(ctx context.Context, m *MUSection, uf string) error {
 	query := `INSERT INTO municipio_tse(cd, nm, uf_cd) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
 	_, err := p.db.ExecContext(ctx, query, m.CD, m.NM, uf)
 	return err
 }
 
-func (p *SectionsProcessor) saveZona(ctx context.Context, z, m string) error {
+func (p *Processor) saveZona(ctx context.Context, z, m string) error {
 	query := `INSERT INTO zona_tse(cd, municipio_cd) VALUES ($1, $2) ON CONFLICT DO NOTHING`
 	_, err := p.db.ExecContext(ctx, query, z, m)
 	return err
 }
 
-func (p *SectionsProcessor) saveSecao(ctx context.Context, m, z string, s *Section) error {
+func (p *Processor) saveSecao(ctx context.Context, m, z string, s *Section) error {
 	query := `INSERT INTO secao_tse(municipio_cd, zona_cd, ns, nsp) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`
 	_, err := p.db.ExecContext(ctx, query, z, m, s.NS, s.NSP)
 	return err

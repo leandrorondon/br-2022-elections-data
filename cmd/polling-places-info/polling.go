@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/sections"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/zipcsv"
+	"github.com/leandrorondon/br-2022-elections-data/internal/processors/zones"
 	"log"
 	"os"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-	"github.com/leandrorondon/br-2022-elections-data/internal/processors"
 	"github.com/leandrorondon/br-2022-elections-data/internal/steps"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
@@ -46,26 +48,26 @@ func main() {
 	g, gctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
-		config := processors.ZipCsvConfig{
+		config := zipcsv.Config{
 			Name:  "Modelos de Urna x Número Interno",
 			Step:  "modelosurna",
 			Table: modelosUrnaTable,
 			URL:   modelosUrnaURL,
 		}
-		modelosUrna := processors.NewZipCsvProcessor(
+		modelosUrna := zipcsv.New(
 			db, stepsService, config,
-			processors.WithColumns([]string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}),
+			zipcsv.WithColumns([]string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}),
 		)
 		return modelosUrna.Run(gctx)
 	})
 
 	g.Go(func() error {
-		electoralZones := processors.NewZonesProcessor(db, stepsService)
+		electoralZones := zones.New(db, stepsService)
 		return electoralZones.Run(gctx)
 	})
 
 	g.Go(func() error {
-		electoralSections := processors.NewSectionsProcessor(db, stepsService)
+		electoralSections := sections.New(db, stepsService)
 		return electoralSections.Run(gctx)
 	})
 

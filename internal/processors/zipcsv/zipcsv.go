@@ -1,4 +1,4 @@
-package processors
+package zipcsv
 
 import (
 	"archive/zip"
@@ -24,23 +24,23 @@ type StepsService interface {
 	Execute(ctx context.Context, step string, fn func(context.Context) error) error
 }
 
-type ZipCsvConfig struct {
+type Config struct {
 	Name  string
 	Step  string
 	Table string
 	URL   string
 }
 
-type ZipCsvOption func(*ZipCsvProcessor)
+type Option func(*Processor)
 
-func WithColumns(columns []string) ZipCsvOption {
-	return func(p *ZipCsvProcessor) {
+func WithColumns(columns []string) Option {
+	return func(p *Processor) {
 		p.overrideColumns = columns
 	}
 }
 
-func NewZipCsvProcessor(db *sqlx.DB, stepsService StepsService, config ZipCsvConfig, opts ...ZipCsvOption) *ZipCsvProcessor {
-	p := &ZipCsvProcessor{
+func New(db *sqlx.DB, stepsService StepsService, config Config, opts ...Option) *Processor {
+	p := &Processor{
 		name:         config.Name,
 		step:         config.Step,
 		table:        config.Table,
@@ -56,7 +56,7 @@ func NewZipCsvProcessor(db *sqlx.DB, stepsService StepsService, config ZipCsvCon
 	return p
 }
 
-type ZipCsvProcessor struct {
+type Processor struct {
 	name            string
 	step            string
 	table           string
@@ -66,11 +66,11 @@ type ZipCsvProcessor struct {
 	overrideColumns []string
 }
 
-func (p *ZipCsvProcessor) Run(ctx context.Context) error {
+func (p *Processor) Run(ctx context.Context) error {
 	return p.stepsService.Execute(ctx, p.step, p.process)
 }
 
-func (p *ZipCsvProcessor) process(ctx context.Context) error {
+func (p *Processor) process(ctx context.Context) error {
 	log.Printf("[%s] Buscando dados de %s.", p.step, p.name)
 
 	resp, err := httpwithretry.Get(p.url, 2)
@@ -124,7 +124,7 @@ func (p *ZipCsvProcessor) process(ctx context.Context) error {
 	return nil
 }
 
-func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File, s string) error {
+func (p *Processor) processFile(ctx context.Context, f *zip.File, s string) error {
 	g, gctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
@@ -154,7 +154,7 @@ func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File, s string
 	return g.Wait()
 }
 
-func (p *ZipCsvProcessor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns, placeholders, s string) error {
+func (p *Processor) saveCSVToDB(ctx context.Context, parser *csv.Reader, columns, placeholders, s string) error {
 	count := 0
 	insertCount := 0
 	values := make([]any, 0, insertBatch)
