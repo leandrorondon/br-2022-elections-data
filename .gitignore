@@ -14,3 +14,5 @@
 # IDE files
 .idea/
 
+# Juypter Notebook checkpoints
+.ipynb_checkpoints/
