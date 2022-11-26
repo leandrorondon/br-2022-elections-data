@@ -39,8 +39,13 @@ func (p *BallotBoxReportsProcessor) processUF(ctx context.Context, g *errgroup.G
 	g.Go(func() error {
 		url := fmt.Sprintf(relatorioUrnaURLTemplate, strings.ToUpper(uf))
 		s := fmt.Sprintf("relatorio-urna-%s", uf)
-		modelosUrna := NewZipCsvProcessor(
-			"Relatórios de Urna", s, relatorioUrnaTable, url, p.db, p.stepsService)
+		config := ZipCsvConfig{
+			Name:  "Relatórios de Urna",
+			Step:  s,
+			Table: relatorioUrnaTable,
+			URL:   url,
+		}
+		modelosUrna := NewZipCsvProcessor(p.db, p.stepsService, config)
 		if err := modelosUrna.Run(ctx); err != nil {
 			return err
 		}

@@ -24,15 +24,36 @@ type StepsService interface {
 	Execute(ctx context.Context, step string, fn func(context.Context) error) error
 }
 
-func NewZipCsvProcessor(name, step, table, url string, db *sqlx.DB, stepsService StepsService) *ZipCsvProcessor {
-	return &ZipCsvProcessor{
-		name:         name,
-		step:         step,
-		table:        table,
-		url:          url,
+type ZipCsvConfig struct {
+	Name  string
+	Step  string
+	Table string
+	URL   string
+}
+
+type ZipCsvOption func(*ZipCsvProcessor)
+
+func WithColumns(columns []string) ZipCsvOption {
+	return func(p *ZipCsvProcessor) {
+		p.overrideColumns = columns
+	}
+}
+
+func NewZipCsvProcessor(db *sqlx.DB, stepsService StepsService, config ZipCsvConfig, opts ...ZipCsvOption) *ZipCsvProcessor {
+	p := &ZipCsvProcessor{
+		name:         config.Name,
+		step:         config.Step,
+		table:        config.Table,
+		url:          config.URL,
 		db:           db,
 		stepsService: stepsService,
 	}
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
 }
 
 type ZipCsvProcessor struct {
@@ -42,7 +63,7 @@ type ZipCsvProcessor struct {
 	url             string
 	db              *sqlx.DB
 	stepsService    StepsService
-	OverrideColumns []string
+	overrideColumns []string
 }
 
 func (p *ZipCsvProcessor) Run(ctx context.Context) error {
@@ -122,8 +143,8 @@ func (p *ZipCsvProcessor) processFile(ctx context.Context, f *zip.File, s string
 		}
 
 		queryColumns := columnListToQuery(columns)
-		if len(p.OverrideColumns) > 0 {
-			queryColumns = columnListToQuery(p.OverrideColumns)
+		if len(p.overrideColumns) > 0 {
+			queryColumns = columnListToQuery(p.overrideColumns)
 		}
 
 		placeholders := buildPlaceholders(parser.FieldsPerRecord, insertBatch)

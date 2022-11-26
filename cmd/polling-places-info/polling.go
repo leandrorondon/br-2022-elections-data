@@ -46,8 +46,16 @@ func main() {
 	g, gctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
-		modelosUrna := processors.NewZipCsvProcessor("Modelos de Urna x Número Interno", "modelosurna", modelosUrnaTable, modelosUrnaURL, db, stepsService)
-		modelosUrna.OverrideColumns = []string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}
+		config := processors.ZipCsvConfig{
+			Name:  "Modelos de Urna x Número Interno",
+			Step:  "modelosurna",
+			Table: modelosUrnaTable,
+			URL:   modelosUrnaURL,
+		}
+		modelosUrna := processors.NewZipCsvProcessor(
+			db, stepsService, config,
+			processors.WithColumns([]string{"ds_modelo_urna", "nr_faixa_inicial", "nr_faixa_final"}),
+		)
 		return modelosUrna.Run(gctx)
 	})
 
